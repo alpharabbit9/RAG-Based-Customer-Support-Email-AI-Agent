@@ -1,0 +1,411 @@
+{
+  "name": "RAG Based Email Customer Support Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "triggerOn": "specificFile",
+        "fileToWatch": {
+          "__rl": true,
+          "value": "15ztnU4DtZ0vsU5VUn4Apca31-MIbM6GZ",
+          "mode": "list",
+          "cachedResultName": "RAG Practise DOC.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/15ztnU4DtZ0vsU5VUn4Apca31-MIbM6GZ/view?usp=drivesdk"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -80
+      ],
+      "id": "bfe83a7d-6ed1-4bf9-b389-03df5024c443",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "un7KSM3KxqLVF1TX",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        208,
+        -80
+      ],
+      "id": "aa07da8a-bc58-4cfd-b3a3-f3dc67380fd3",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "un7KSM3KxqLVF1TX",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "llama-text-embed-v2-index",
+          "mode": "list",
+          "cachedResultName": "llama-text-embed-v2-index"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        -80
+      ],
+      "id": "e2e06b6f-7a6b-4beb-8371-42fdf4ede702",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "BZmbAGWrMg1v8xo0",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        208
+      ],
+      "id": "ea3f4384-682e-4d48-964c-8f6cc8dd9480",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "wvtTNOweCW17WZzd",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        112
+      ],
+      "id": "504bb143-9c7d-4576-829f-1cdbfb54f6d4",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1104,
+        -416
+      ],
+      "id": "4132bf64-59fe-4796-96e8-1aff8fde7cef",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4RKNMdKt2G9Mc3hX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI customer support agent for Acme Logistics.\n\nYour job is to read incoming customer emails and write a professional,\naccurate response using the company's knowledge base.\n\nThe following is an email received from a customer.\n\n--- CUSTOMER EMAIL ---\n{{ $json.text }}\n\n\n--- END CUSTOMER EMAIL ---\n\nRead the entire email carefully.\n\nIdentify every question or request made by the customer.\n\nUse the available knowledge base to find the information needed\nto answer those questions.\n\nThen write a complete customer support reply.\n\n1. Treat the user message as the actual email received from the customer.\n2. Carefully identify every question, request, and concern raised by the customer.\n3. If the customer asks multiple questions, answer every question.\n4. Do not ask the customer to provide their email again when the email\n   content is already available.\n\nKNOWLEDGE BASE:\n\n5. Use the Pinecone knowledge base whenever the customer asks about\n   company-specific information.\n6. Search the knowledge base for each relevant topic before answering.\n7. Base your answers only on information found in the knowledge base.\n8. Never invent pricing, limits, policies, features, integrations,\n   response times, or other company information.\n9. If the knowledge base does not contain information needed to answer\n   a question, clearly say that the information is not available and\n   that a human support representative may need to confirm it.\n\nRESPONSE:\n\n10. Answer the customer's questions directly and completely.\n11. Organize answers clearly when the customer asks multiple questions.\n12. Use a professional, friendly customer-support tone.\n13. Do not mention Pinecone, RAG, the knowledge base, AI, tools, or\n    internal processes.\n14. Do not claim that you checked an account, shipment, system, or\n    internal records unless an actual tool was used to do so.\n15. Do not make assumptions about the customer's situation.\n\nRESPONSE QUALITY RULES\n\n- Answer every question the customer asks.\n- Only include information relevant to the customer's questions.\n- Do not add unrelated information simply because it was retrieved\n  from the knowledge base.\n- Keep responses concise and easy to scan.\n- Never invent information that is not supported by the knowledge base.\n- If the required information cannot be found in the knowledge base,\n  explicitly say that you cannot confirm it.\n- Never claim to have performed an action unless an actual tool was\n  used to perform that action.\n- Never claim to have checked an account, shipment, payment,\n  subscription, or internal system unless an appropriate tool was\n  actually used.\n- Do not promise to upgrade accounts, issue refunds, schedule calls,\n  modify data, or perform other actions unless an appropriate tool\n  is available.\n- When suggesting next steps, describe what the customer can do or\n  what a human support representative can help with.\n\nOUTPUT:\n\nReturn only the email response that should be sent to the customer.\n\nDo not include analysis, reasoning, tool information, or explanations\nabout how you generated the response.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -704,
+        -416
+      ],
+      "id": "ed8339ee-67a1-4e05-8d87-bcdf2ed4816d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search the company knowledge base for information relevant to the customer's question.\n\nUse this tool whenever the customer asks about company products, plans, pricing, features, policies, limits, integrations, support, refunds, or other company-specific information.\n\nReturn the most relevant information from the knowledge base so the AI agent can use it to formulate the final response.Search the company knowledge base for information relevant to the customer's question.\n\nUse this tool whenever the customer asks about company products, plans, pricing, features, policies, limits, integrations, support, refunds, or other company-specific information.\n\nReturn the most relevant information from the knowledge base so the AI agent can use it to formulate the final response.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "llama-text-embed-v2-index",
+          "mode": "list",
+          "cachedResultName": "llama-text-embed-v2-index"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        -176
+      ],
+      "id": "04f5ef8f-23b5-49dd-ab56-079d4bc5648e",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "BZmbAGWrMg1v8xo0",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $('Gmail Trigger').item.json.subject }}",
+        "message": "={{ $json.output }}",
+        "options": {
+          "threadId": "=",
+          "sendTo": "={{ $('Gmail Trigger').item.json.from.value[0].address }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -352,
+        -416
+      ],
+      "id": "31088611-1b96-4ae5-8fcd-da49147dae0b",
+      "name": "Create a draft",
+      "webhookId": "a7cfb7f7-e832-44ae-bf5d-1a3b78729909",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4RKNMdKt2G9Mc3hX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -896,
+        -416
+      ],
+      "id": "40d919c9-d09d-4eee-9756-57a5f18af23d",
+      "name": "Get a message",
+      "webhookId": "5b815265-c0d0-4173-b9a0-e4a380cea7c6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4RKNMdKt2G9Mc3hX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 4096
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1008,
+        -144
+      ],
+      "id": "4a5f0ccc-559a-4353-bdc7-a32d199ee9f2",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "wvtTNOweCW17WZzd",
+          "name": "OpenAI account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a message": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "684eb0ba-cae3-495e-895f-689d62bb68a2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "12f61177be1cbe7b4570ff6b9acff02fb4a568e5d52de8ba7ebf16a4fd31b29d"
+  },
+  "nodeGroups": [],
+  "id": "sN2wZmyFZGlzGF0Z",
+  "tags": [
+    {
+      "updatedAt": "2026-08-05T07:32:53.160Z",
+      "createdAt": "2026-08-05T07:32:53.160Z",
+      "id": "wfdJFkoQvdqe8EOa",
+      "name": "RAG"
+    },
+    {
+      "updatedAt": "2026-08-05T07:33:01.662Z",
+      "createdAt": "2026-08-05T07:33:01.662Z",
+      "id": "rwZ9XuhzStyXJD4e",
+      "name": "OSTAD"
+    }
+  ]
+}
