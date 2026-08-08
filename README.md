@@ -1,6 +1,6 @@
 # RAG-Based Email Customer Support Agent
 
-![Workflow](workflow.png)
+![Workflow](worflow.png)
 
 ![Architecture Diagram](Architecture_Diagram.png)
 
